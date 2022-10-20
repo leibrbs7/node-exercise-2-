@@ -85,23 +85,18 @@ const update = (bioObject, mapBio) => {
 const del = (bioMap, bioName) => bioMap.delete(bioName)
 
 const checkError = (bioObject) => {
-  let errorPrompt = []
-  if (bioObject.isValidName() === false) {
-    errorPrompt = [...errorPrompt, 'Name should be a string']
-  }
   if (bioObject.isValidSex() === false) {
-    errorPrompt = [...errorPrompt, '!!! ERROR: Invalid Sex']
+    console.log('!!! ERROR: Invalid Sex')
   }
   if (bioObject.isValidAge() === false) {
-    errorPrompt = [...errorPrompt, '!!! ERROR: Invalid Age']
+    console.log('!!! ERROR: Invalid Age')
   }
   if (bioObject.isValidHeight() === false) {
-    errorPrompt = [...errorPrompt, '!!! ERROR: Invalid Height']
+    console.log('!!! ERROR: Invalid Height')
   }
   if (bioObject.isValidWeight() === false) {
-    errorPrompt = [...errorPrompt, '!!! ERROR: Invalid Weight']
+    console.log('!!! ERROR: Invalid Weight')
   }
-  return errorPrompt.join(', ')
 }
 
 let [, ,choice, name, sex, age, height, weight] = argv
