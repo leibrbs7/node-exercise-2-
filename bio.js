@@ -5,10 +5,33 @@ const csvjson = require('csvjson')
 class Bio {
   constructor(name, sex, age, height, weight) {
     this.name = name
-    this.sex = sex
-    this.age = age
-    this.height = height
-    this.weight = weight
+    this.sex = sex.toUpperCase()
+    this.age = Number(age)
+    this.height = Number(height)
+    this.weight = Number(weight)
+  }
+
+  isValidName() {
+    return typeof this.name === 'string'
+  }
+
+  isValidSex() {
+    return 'FM'.includes(this.sex)
+    && typeof this.sex === 'string'
+    && this.sex.length === 1
+  }
+
+  isValidAge() {
+    return !Number.isNaN(this.age)
+    && this.age >= 18
+  }
+
+  isValidHeight() {
+    return !Number.isNaN(this.height)
+  }
+
+  isValidWeight() {
+    return !Number.isNaN(this.weight)
   }
 }
 
@@ -19,7 +42,15 @@ const readFile = (file) => {
     quote: '""',
     headers: 'name,sex,age,height,weight',
   }
-  return csvjson.toObject(data, options)
+
+  const stats = csvjson.toObject(data, options)
+  const headers = Object.keys(stats)
+  const map = new Map()
+
+  for (let i = 1; i < headers.length; i += 1) {
+    map.set(stats[headers[i]].name, stats[headers[i]])
+  }
+  return map
 }
 
 const writeFile = (file, bioArray) => {
@@ -36,25 +67,35 @@ const writeFile = (file, bioArray) => {
   }
 }
 
-const create = (bioObject, bioArray) => [...bioArray, bioObject]
+const create = (bioMap, bioObjectbject) => bioMap.set(bioObjectbject.name, bioObjectbject)
 
-const read = (bioObject, bioArray) => bioArray.find((bio) => bio.name === bioObject)
+const read = (bioMap, bioName) => bioMap.get(`${bioName[0].toUpperCase() + bioName.substring(1).toLowerCase()}`)
 
-const update = (bioObject, bioArray) => {
-  if (bioArray.find((bio) => bio.name === bioObject.name)) {
-    const index = bioArray.findIndex((bio) => bio.name === bioObject.name)
-    const { name } = bioObject
-    const { sex } = bioObject.sex
-    const { age } = bioObject.age
-    const { height } = bioObject.height
-    const { weight } = bioObject.weight
-    bioArray[index] = {...bioArray[index], name, sex, age, height, weight,}
-    return bioArray
+const update = (bioObject, mapBio) => {
+  if (mapBio.has(bioObject.name)) {
+    const bioMap = mapBio
+    bioMap.set(bioObject.name, bioObject)
+    return bioMap
   }
   return null
 }
 
-const del = (bioObject, bioArray) => bioArray.filter((bio) => bio.name !== bioObject)
+const del = (bioMap, bioName) => bioMap.delete(bioName)
+
+const checkError = (bioObject) => {
+  if (bioObject.isValidSex() === false) {
+    console.log('!!! ERROR: Invalid Sex')
+  }
+  if (bioObject.isValidAge() === false) {
+    console.log('!!! ERROR: Invalid Age')
+  }
+  if (bioObject.isValidHeight() === false) {
+    console.log('!!! ERROR: Invalid Height')
+  }
+  if (bioObject.isValidWeight() === false) {
+    console.log('!!! ERROR: Invalid Weight')
+  }
+}
 
 let [, ,choice, name, sex, age, height, weight] = argv
 
@@ -63,26 +104,14 @@ let bioArray = readFile('biostats.csv')
 if (bioArray !== null && choice !== null) {
   switch (choice) {
     case '-c': {
-      if (sex.toLowerCase() !== 'f' && sex.toLowerCase() !== 'm') { 
-        console.log('!!! ERROR: Invalid Sex')
-      }
-      if (age < 18 || isNaN(age) === true){
-        console.log('!!! ERROR: Invalid Age')
-      }
-      if (isNaN(height) === true) { 
-        console.log('!!! ERROR: Invalid Height')
-      }
-      if (isNaN(weight) === true) { 
-        console.log('!!! ERROR: Invalid Weight')
+      const newBio = new Bio(name, sex, age, height, weight)
+      if (checkError(newBio).length !== 0) {
+        console.log(`${checkError(newBio)}`)
       } else {
-        name = name[0].toUpperCase() + name.substring(1)
-        sex = sex.toUpperCase()
-        const newBio = new Bio(name, sex, age, height, weight)
         bioArray = create(newBio, bioArray)
         if (bioArray === null) {
-          console.log(`!!! ERROR: Data doesn't Exist`)
+          console.log('Name already exists')
         } else {
-          bioArray.slice()
           writeFile('biostats.csv', bioArray)
         }
       }
@@ -100,38 +129,24 @@ if (bioArray !== null && choice !== null) {
     }
     break
     case '-u': {
-      if (sex.toLowerCase() !== 'f' && sex.toLowerCase() !== 'm') { 
-        console.log('!!! ERROR: Invalid Sex')
-      }
-      if (age < 18 || isNaN(age) === true){
-        console.log('!!! ERROR: Invalid Age')
-      }
-      if (isNaN(height) === true) { 
-        console.log('!!! ERROR: Invalid Height')
-      }
-      if (isNaN(weight) === true) { 
-        console.log('!!! ERROR: Invalid Weight')
+      const newBio = new Bio(name, sex, age, height, weight)
+      if (checkError(newBio).length !== 0) {
+        console.log(`${checkError(newBio)}`)
       } else {
-        name = name[0].toUpperCase() + name.substring(1)
-        sex = sex.toUpperCase()
-        const newBio = new Bio(name, sex, age, height, weight)
         bioArray = update(newBio, bioArray)
         if (bioArray === null) {
-          console.log(`!!! ERROR: Data doesn't Exist`)
+          console.log('Name does not exist')
         } else {
-          bioArray.slice()
           writeFile('biostats.csv', bioArray)
         }
       }
-    }
+      }
     break
     case '-d': {
-        bioArray = del(name, bioArray)
         if (bioArray === null) {
           console.log('!!! ERROR: Data does not exist')
         } else {
-          bioArray.slice()
-          writeFile('biostats.csv', bioArray)
+          del(bioMap, name)
         }
       }
     break
