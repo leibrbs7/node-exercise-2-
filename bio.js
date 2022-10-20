@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 const fs = require('node:fs')
 const { argv } = require('node:process')
 const csvjson = require('csvjson')
